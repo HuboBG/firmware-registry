@@ -5,12 +5,7 @@ services:
     container_name: firmware-registry-api
     restart: unless-stopped
     env_file:
-      - .env
-    environment:
-      # override internal storage paths to mounted volumes
-      - FW_STORAGE_DIR=/data/firmware
-      - FW_DB_PATH=/data/db/firmware-registry.db
-      - FW_PUBLIC_BASE_URL=${FW_PUBLIC_BASE_URL}
+      - ./api/env
     volumes:
       - fw_data:/data/firmware
       - fw_db:/data/db
@@ -23,11 +18,7 @@ services:
     container_name: firmware-registry-ui
     restart: unless-stopped
     env_file:
-      - .env
-    environment:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - VITE_ADMIN_KEY=${VITE_ADMIN_KEY}
-      - VITE_DEVICE_KEY=${VITE_DEVICE_KEY}
+      - ./ui/.env
     expose:
       - "5173"
 
@@ -39,7 +30,7 @@ services:
       - api
       - ui
     ports:
-      - "80:80"
+      - "8080:80"
       # - "443:443" # enable if you add TLS certs
     environment:
       - NGINX_BASIC_AUTH_USER=${NGINX_BASIC_AUTH_USER}

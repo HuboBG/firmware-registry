@@ -8,7 +8,7 @@ on:
 jobs:
 
   build-api:
-    name: API Docker Build Test
+    name: API Docker Build
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,7 @@ jobs:
 
 
   build-ui:
-    name: UI Docker Build Test
+    name: UI Docker Build
     runs-on: ubuntu-latest
 
     steps:
