@@ -3,6 +3,8 @@ package firmware
 import (
 	"database/sql"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 // SQLiteRepo implements Repository over SQLite.
@@ -33,6 +35,18 @@ FROM firmwares WHERE type=? AND version=?
 		&f.Type, &f.Version, &f.Filename, &f.SizeBytes, &f.SHA256, &created,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Debug().
+				Str("type", typeName).
+				Str("version", version).
+				Msg("Firmware not found in database")
+		} else {
+			log.Error().
+				Err(err).
+				Str("type", typeName).
+				Str("version", version).
+				Msg("Database error querying firmware")
+		}
 		return f, err
 	}
 	f.CreatedAt, _ = time.Parse(time.RFC3339, created)

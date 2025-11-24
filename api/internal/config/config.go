@@ -22,6 +22,20 @@ type Config struct {
 
 	MaxUploadMB int64 `yaml:"max_upload_mb"`
 
+	// Logging configuration
+	Logging struct {
+		Level      string `yaml:"level"`       // trace, debug, info, warn, error, fatal, panic
+		Format     string `yaml:"format"`      // json, console
+		Output     string `yaml:"output"`      // stdout, file, syslog, multi
+		FilePath   string `yaml:"file_path"`   // path to log file (if output=file or multi)
+		MaxSizeMB  int    `yaml:"max_size_mb"` // max size before rotation
+		MaxBackups int    `yaml:"max_backups"` // max number of old log files
+		MaxAgeDays int    `yaml:"max_age_days"` // max age in days
+		Compress   bool   `yaml:"compress"`    // compress rotated files
+		SyslogAddr string `yaml:"syslog_addr"` // syslog server address (if output=syslog or multi)
+		SyslogNet  string `yaml:"syslog_net"`  // tcp, udp, or empty for local
+	} `yaml:"logging"`
+
 	// OIDC/Keycloak extension point. Off by default.
 	OIDC struct {
 		Enabled      bool   `yaml:"enabled"`
@@ -66,6 +80,18 @@ func defaults() Config {
 	c.DBPath = "/data/db/firmware-registry.db"
 	c.MaxUploadMB = 50
 
+	// Logging defaults
+	c.Logging.Level = "info"
+	c.Logging.Format = "json"
+	c.Logging.Output = "stdout"
+	c.Logging.FilePath = "/var/log/firmware-registry/app.log"
+	c.Logging.MaxSizeMB = 100
+	c.Logging.MaxBackups = 3
+	c.Logging.MaxAgeDays = 28
+	c.Logging.Compress = true
+	c.Logging.SyslogAddr = ""
+	c.Logging.SyslogNet = "udp"
+
 	c.Webhooks.TimeoutSec = 5
 	c.Webhooks.Retries = 3
 
@@ -108,6 +134,33 @@ func applyEnv(cfg *Config) {
 	setStr(&cfg.OIDC.Audience, "FW_OIDC_AUDIENCE")
 	setStr(&cfg.OIDC.AdminRole, "FW_OIDC_ADMIN_ROLE")
 	setStr(&cfg.OIDC.DeviceRole, "FW_OIDC_DEVICE_ROLE")
+
+	// Logging configuration
+	setStr(&cfg.Logging.Level, "FW_LOG_LEVEL")
+	setStr(&cfg.Logging.Format, "FW_LOG_FORMAT")
+	setStr(&cfg.Logging.Output, "FW_LOG_OUTPUT")
+	setStr(&cfg.Logging.FilePath, "FW_LOG_FILE_PATH")
+	setStr(&cfg.Logging.SyslogAddr, "FW_LOG_SYSLOG_ADDR")
+	setStr(&cfg.Logging.SyslogNet, "FW_LOG_SYSLOG_NET")
+
+	if v := os.Getenv("FW_LOG_MAX_SIZE_MB"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			cfg.Logging.MaxSizeMB = n
+		}
+	}
+	if v := os.Getenv("FW_LOG_MAX_BACKUPS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			cfg.Logging.MaxBackups = n
+		}
+	}
+	if v := os.Getenv("FW_LOG_MAX_AGE_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			cfg.Logging.MaxAgeDays = n
+		}
+	}
+	if v := os.Getenv("FW_LOG_COMPRESS"); v != "" {
+		cfg.Logging.Compress = v == "1" || strings.ToLower(v) == "true"
+	}
 }
 
 func setStr(dst *string, key string) {

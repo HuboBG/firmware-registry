@@ -1,11 +1,33 @@
 import axios from "axios";
 import { runtimeConfig } from "./runtime-config";
 import { getAccessToken } from "./auth";
+import { logger } from "./logger";
 
 const api = axios.create({
     baseURL: runtimeConfig.API_BASE_URL || "",
     timeout: 20000
 });
+
+// Add response interceptor for logging
+api.interceptors.response.use(
+    (response) => {
+        logger.debug('API request successful', {
+            method: response.config.method,
+            url: response.config.url,
+            status: response.status,
+        });
+        return response;
+    },
+    (error) => {
+        logger.error('API request failed', error, {
+            method: error.config?.method,
+            url: error.config?.url,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+        });
+        return Promise.reject(error);
+    }
+);
 
 const adminHeaders = () => {
     // If OIDC is enabled, use Bearer token
