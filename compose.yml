@@ -5,7 +5,7 @@ services:
     container_name: firmware-registry-api
     restart: unless-stopped
     env_file:
-      - ./api/env
+      - ./api/.env
     volumes:
       - fw_data:/data/firmware
       - fw_db:/data/db
@@ -20,7 +20,7 @@ services:
     env_file:
       - ./ui/.env
     expose:
-      - "5173"
+      - "80"
 
   nginx:
     image: nginx:1.27-alpine
@@ -32,9 +32,8 @@ services:
     ports:
       - "8080:80"
       # - "443:443" # enable if you add TLS certs
-    environment:
-      - NGINX_BASIC_AUTH_USER=${NGINX_BASIC_AUTH_USER}
-      - NGINX_BASIC_AUTH_PASS=${NGINX_BASIC_AUTH_PASS}
+    env_file:
+      - .env
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/htpasswd.sh:/docker-entrypoint.d/99-htpasswd.sh:ro
