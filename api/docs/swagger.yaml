@@ -1,0 +1,406 @@
+basePath: /api
+definitions:
+  firmware-registry-api_internal_firmware.FirmwareDTO:
+    properties:
+      createdAt:
+        example: "2024-01-15T10:30:00Z"
+        type: string
+      downloadUrl:
+        example: http://localhost:8080/api/firmware/esp32-main/1.2.3
+        type: string
+      filename:
+        example: firmware.bin
+        type: string
+      sha256:
+        example: abc123...
+        type: string
+      sizeBytes:
+        example: 524288
+        type: integer
+      type:
+        example: esp32-main
+        type: string
+      version:
+        example: 1.2.3
+        type: string
+    type: object
+  firmware-registry-api_internal_webhook.WebhookDTO:
+    properties:
+      enabled:
+        example: true
+        type: boolean
+      events:
+        example:
+        - firmware.uploaded
+        - firmware.deleted
+        items:
+          type: string
+        type: array
+      id:
+        example: 1
+        type: integer
+      url:
+        example: https://example.com/webhook
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: http://github.com/your-org/firmware-registry
+  description: Self-hosted firmware registry for ESP32 OTA updates with webhook support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Firmware Registry API
+  version: "1.0"
+paths:
+  /firmware/{type}:
+    get:
+      description: Get all firmware versions for a specific type, sorted by semantic
+        version (newest first)
+      parameters:
+      - description: Firmware type (e.g., esp32-main)
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/firmware-registry-api_internal_firmware.FirmwareDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - DeviceKeyAuth: []
+      - BearerAuth: []
+      summary: List firmware versions
+      tags:
+      - firmware
+  /firmware/{type}/{version}:
+    delete:
+      description: Delete a firmware binary and its metadata
+      parameters:
+      - description: Firmware type (e.g., esp32-main)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Semantic version (e.g., 1.2.3)
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deletion confirmation
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "404":
+          description: Firmware not found
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete firmware
+      tags:
+      - firmware
+    get:
+      description: Download the firmware binary for a specific type and version
+      parameters:
+      - description: Firmware type (e.g., esp32-main)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Semantic version (e.g., 1.2.3)
+        in: path
+        name: version
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Firmware binary file
+          headers:
+            X-Firmware-Sha256:
+              description: SHA256 checksum of the firmware
+              type: string
+            X-Firmware-Version:
+              description: Firmware version
+              type: string
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "404":
+          description: Firmware not found
+          schema:
+            type: string
+      security:
+      - DeviceKeyAuth: []
+      - BearerAuth: []
+      summary: Download firmware
+      tags:
+      - firmware
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a new firmware binary for a specific type and version
+      parameters:
+      - description: Firmware type (e.g., esp32-main)
+        in: path
+        name: type
+        required: true
+        type: string
+      - description: Semantic version (e.g., 1.2.3)
+        in: path
+        name: version
+        required: true
+        type: string
+      - description: Firmware binary file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/firmware-registry-api_internal_firmware.FirmwareDTO'
+        "400":
+          description: Invalid multipart or missing file
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Save failed
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Upload firmware
+      tags:
+      - firmware
+  /firmware/{type}/latest:
+    get:
+      description: Get the latest firmware version for a specific type based on semantic
+        versioning
+      parameters:
+      - description: Firmware type (e.g., esp32-main)
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/firmware-registry-api_internal_firmware.FirmwareDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "404":
+          description: No firmware found
+          schema:
+            type: string
+      security:
+      - DeviceKeyAuth: []
+      - BearerAuth: []
+      summary: Get latest firmware
+      tags:
+      - firmware
+  /webhooks:
+    get:
+      description: Get all registered webhooks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/firmware-registry-api_internal_webhook.WebhookDTO'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: List webhooks
+      tags:
+      - webhooks
+    post:
+      consumes:
+      - application/json
+      description: Register a new webhook endpoint
+      parameters:
+      - description: Webhook configuration
+        in: body
+        name: webhook
+        required: true
+        schema:
+          $ref: '#/definitions/firmware-registry-api_internal_webhook.WebhookDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Created webhook ID
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Invalid JSON or missing required fields
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Create webhook
+      tags:
+      - webhooks
+  /webhooks/{id}:
+    delete:
+      description: Remove a webhook from the registry
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Deletion confirmation
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Invalid webhook ID
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Delete webhook
+      tags:
+      - webhooks
+    put:
+      consumes:
+      - application/json
+      description: Update an existing webhook configuration
+      parameters:
+      - description: Webhook ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated webhook configuration
+        in: body
+        name: webhook
+        required: true
+        schema:
+          $ref: '#/definitions/firmware-registry-api_internal_webhook.WebhookDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Update confirmation
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "400":
+          description: Invalid JSON or webhook ID
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Database error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      summary: Update webhook
+      tags:
+      - webhooks
+securityDefinitions:
+  ApiKeyAuth:
+    description: Admin API key for administrative operations
+    in: header
+    name: X-Admin-Key
+    type: apiKey
+  BearerAuth:
+    description: 'JWT Bearer token from OIDC provider (format: "Bearer {token}")'
+    in: header
+    name: Authorization
+    type: apiKey
+  DeviceKeyAuth:
+    description: Device API key for firmware download operations
+    in: header
+    name: X-Device-Key
+    type: apiKey
+swagger: "2.0"

@@ -16,7 +16,39 @@ import (
 	"firmware-registry-api/internal/webhook"
 
 	"github.com/rs/zerolog/log"
+
+	_ "firmware-registry-api/docs" // swagger docs
 )
+
+// @title           Firmware Registry API
+// @version         1.0
+// @description     Self-hosted firmware registry for ESP32 OTA updates with webhook support
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://github.com/your-org/firmware-registry
+// @contact.email  support@example.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api
+
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name X-Admin-Key
+// @description Admin API key for administrative operations
+
+// @securityDefinitions.apikey DeviceKeyAuth
+// @in header
+// @name X-Device-Key
+// @description Device API key for firmware download operations
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description JWT Bearer token from OIDC provider (format: "Bearer {token}")
 
 func main() {
 	cfgPath := os.Getenv("FW_CONFIG_FILE")

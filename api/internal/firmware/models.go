@@ -14,13 +14,13 @@ type Firmware struct {
 
 // FirmwareDTO is what we expose over HTTP.
 type FirmwareDTO struct {
-	Type        string    `json:"type"`
-	Version     string    `json:"version"`
-	Filename    string    `json:"filename"`
-	SizeBytes   int64     `json:"sizeBytes"`
-	SHA256      string    `json:"sha256"`
-	CreatedAt   time.Time `json:"createdAt"`
-	DownloadURL string    `json:"downloadUrl,omitempty"`
+	Type        string    `json:"type" example:"esp32-main" doc:"Firmware type identifier"`
+	Version     string    `json:"version" example:"1.2.3" doc:"Semantic version"`
+	Filename    string    `json:"filename" example:"firmware.bin" doc:"Original filename"`
+	SizeBytes   int64     `json:"sizeBytes" example:"524288" doc:"File size in bytes"`
+	SHA256      string    `json:"sha256" example:"abc123..." doc:"SHA256 checksum"`
+	CreatedAt   time.Time `json:"createdAt" example:"2024-01-15T10:30:00Z" doc:"Upload timestamp"`
+	DownloadURL string    `json:"downloadUrl,omitempty" example:"http://localhost:8080/api/firmware/esp32-main/1.2.3" doc:"Direct download URL"`
 }
 
 func (f Firmware) ToDTO(downloadURL string) FirmwareDTO {

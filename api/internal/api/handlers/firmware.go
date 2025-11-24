@@ -73,6 +73,22 @@ func (h *FirmwareHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "invalid firmware route", http.StatusNotFound)
 }
 
+// upload godoc
+// @Summary      Upload firmware
+// @Description  Upload a new firmware binary for a specific type and version
+// @Tags         firmware
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        type     path      string  true  "Firmware type (e.g., esp32-main)"
+// @Param        version  path      string  true  "Semantic version (e.g., 1.2.3)"
+// @Param        file     formData  file    true  "Firmware binary file"
+// @Success      200      {object}  firmware.FirmwareDTO
+// @Failure      400      {string}  string  "Invalid multipart or missing file"
+// @Failure      401      {string}  string  "Unauthorized"
+// @Failure      500      {string}  string  "Save failed"
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /firmware/{type}/{version} [post]
 func (h *FirmwareHandler) upload(w http.ResponseWriter, r *http.Request, t, v string) {
 	maxN := h.MaxBytes
 	r.Body = http.MaxBytesReader(w, r.Body, maxN)
@@ -106,6 +122,21 @@ func (h *FirmwareHandler) upload(w http.ResponseWriter, r *http.Request, t, v st
 	util.WriteJSON(w, dto)
 }
 
+// download godoc
+// @Summary      Download firmware
+// @Description  Download the firmware binary for a specific type and version
+// @Tags         firmware
+// @Produce      octet-stream
+// @Param        type     path      string  true  "Firmware type (e.g., esp32-main)"
+// @Param        version  path      string  true  "Semantic version (e.g., 1.2.3)"
+// @Success      200      {file}    binary  "Firmware binary file"
+// @Header       200      {string}  X-Firmware-Sha256   "SHA256 checksum of the firmware"
+// @Header       200      {string}  X-Firmware-Version  "Firmware version"
+// @Failure      404      {string}  string  "Firmware not found"
+// @Failure      401      {string}  string  "Unauthorized"
+// @Security     DeviceKeyAuth
+// @Security     BearerAuth
+// @Router       /firmware/{type}/{version} [get]
 func (h *FirmwareHandler) download(w http.ResponseWriter, t, v string) {
 	rec, err := h.Service.Repo.Get(t, v)
 	if err != nil {
@@ -131,6 +162,19 @@ func (h *FirmwareHandler) download(w http.ResponseWriter, t, v string) {
 	_, _ = io.Copy(w, f)
 }
 
+// delete godoc
+// @Summary      Delete firmware
+// @Description  Delete a firmware binary and its metadata
+// @Tags         firmware
+// @Produce      json
+// @Param        type     path      string  true  "Firmware type (e.g., esp32-main)"
+// @Param        version  path      string  true  "Semantic version (e.g., 1.2.3)"
+// @Success      200      {object}  map[string]bool  "Deletion confirmation"
+// @Failure      404      {string}  string  "Firmware not found"
+// @Failure      401      {string}  string  "Unauthorized"
+// @Security     ApiKeyAuth
+// @Security     BearerAuth
+// @Router       /firmware/{type}/{version} [delete]
 func (h *FirmwareHandler) delete(w http.ResponseWriter, t, v string) {
 	rec, err := h.Service.Repo.Get(t, v)
 	if err != nil {
@@ -150,6 +194,18 @@ func (h *FirmwareHandler) delete(w http.ResponseWriter, t, v string) {
 	util.WriteJSON(w, map[string]any{"deleted": true})
 }
 
+// list godoc
+// @Summary      List firmware versions
+// @Description  Get all firmware versions for a specific type, sorted by semantic version (newest first)
+// @Tags         firmware
+// @Produce      json
+// @Param        type  path      string  true  "Firmware type (e.g., esp32-main)"
+// @Success      200   {array}   firmware.FirmwareDTO
+// @Failure      401   {string}  string  "Unauthorized"
+// @Failure      500   {string}  string  "Database error"
+// @Security     DeviceKeyAuth
+// @Security     BearerAuth
+// @Router       /firmware/{type} [get]
 func (h *FirmwareHandler) list(w http.ResponseWriter, t string) {
 	list, err := h.Service.Repo.List(t)
 	if err != nil {
@@ -168,6 +224,18 @@ func (h *FirmwareHandler) list(w http.ResponseWriter, t string) {
 	util.WriteJSON(w, out)
 }
 
+// latest godoc
+// @Summary      Get latest firmware
+// @Description  Get the latest firmware version for a specific type based on semantic versioning
+// @Tags         firmware
+// @Produce      json
+// @Param        type  path      string  true  "Firmware type (e.g., esp32-main)"
+// @Success      200   {object}  firmware.FirmwareDTO
+// @Failure      404   {string}  string  "No firmware found"
+// @Failure      401   {string}  string  "Unauthorized"
+// @Security     DeviceKeyAuth
+// @Security     BearerAuth
+// @Router       /firmware/{type}/latest [get]
 func (h *FirmwareHandler) latest(w http.ResponseWriter, t string) {
 	list, err := h.Service.Repo.List(t)
 	if err != nil || len(list) == 0 {
