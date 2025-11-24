@@ -3,7 +3,7 @@ name: Unified Release Build
 on:
   push:
     tags:
-      - "v*"   # Only run when pushing version tags
+      - "v*"   # Only run on version tags
 
 jobs:
 
@@ -32,11 +32,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: api-binary-${{ github.ref_name }}
-          path: api
+          path: api/firmware-registry-api
 
 
   build-ui:
-    name: Build Vue UI (TypeScript + Yarn)
+    name: Build Vue UI (TS + Yarn)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,7 +52,7 @@ jobs:
           cache: "yarn"
           cache-dependency-path: "ui/yarn.lock"
 
-      - name: Install dependencies
+      - name: Install deps
         run: yarn install --frozen-lockfile
 
       - name: Build UI
@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ui-dist-${{ github.ref_name }}
-          path: dist/
+          path: ui/dist/
 
 
   docker:
@@ -74,7 +74,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (multi-arch)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Buildx
@@ -87,7 +87,7 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      # Build API Docker image
+      # Build API image
       - name: Build & Push API Image
         uses: docker/build-push-action@v5
         with:
@@ -98,7 +98,7 @@ jobs:
             registry.nimahosts.com/hubo/firmware-registry-api:${{ github.ref_name }}
             registry.nimahosts.com/hubo/firmware-registry-api:latest
 
-      # Build UI Docker image
+      # Build UI image
       - name: Build & Push UI Image
         uses: docker/build-push-action@v5
         with:
