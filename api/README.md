@@ -77,7 +77,7 @@ Use env vars or YAML (set `FW_CONFIG_FILE=/path/config.yaml`).
 **Key environment variables:**
 - `FW_LISTEN_ADDR` - Server address (default: `:8080`)
 - `FW_ADMIN_KEY` / `FW_DEVICE_KEY` - API authentication
-- `FW_NOAUTH_IPS` - Comma-separated IP addresses that bypass authentication (supports IPv4 and IPv6, e.g., `127.0.0.1,::1,192.168.1.100`)
+- `FW_NOAUTH_IPS` - Comma-separated IP addresses or CIDR subnets that bypass authentication (e.g., `127.0.0.1,::1,10.10.0.0/24`)
 - `FW_STORAGE_DIR` - Firmware binary storage path
 - `FW_DB_PATH` - SQLite database path
 - `FW_LOG_LEVEL` - Logging level (trace, debug, info, warn, error)

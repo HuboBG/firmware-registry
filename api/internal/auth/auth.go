@@ -11,16 +11,17 @@ import (
 
 // Auth enforces both API-key and OIDC/JWT based authentication
 type Auth struct {
-	AdminKey     string
-	DeviceKey    string
-	NoAuthIPs    []string // IP addresses that bypass authentication
-	OIDCEnabled  bool
-	OIDCVerifier *OIDCVerifier
+	AdminKey      string
+	DeviceKey     string
+	NoAuthIPs     []net.IP     // Individual IP addresses that bypass authentication
+	NoAuthSubnets []*net.IPNet // Subnets (CIDR) that bypass authentication
+	OIDCEnabled   bool
+	OIDCVerifier  *OIDCVerifier
 }
 
-// isIPWhitelisted checks if the remote IP is in the no-auth whitelist
+// isIPWhitelisted checks if the remote IP is in the no-auth whitelist (IPs or subnets)
 func (a Auth) isIPWhitelisted(remoteAddr string) bool {
-	if len(a.NoAuthIPs) == 0 {
+	if len(a.NoAuthIPs) == 0 && len(a.NoAuthSubnets) == 0 {
 		return false
 	}
 
@@ -39,20 +40,21 @@ func (a Auth) isIPWhitelisted(remoteAddr string) bool {
 		return false
 	}
 
-	// Check against whitelist
+	// Check against individual IPs
 	for _, allowedIP := range a.NoAuthIPs {
-		// Parse the whitelist IP
-		whitelistIP := net.ParseIP(strings.TrimSpace(allowedIP))
-		if whitelistIP == nil {
-			log.Warn().Str("whitelist_ip", allowedIP).Msg("Invalid IP in whitelist")
-			continue
-		}
-
 		// Compare IPs (this handles IPv4/IPv6 equivalence like 127.0.0.1 == ::1)
-		if clientIP.Equal(whitelistIP) {
+		if clientIP.Equal(allowedIP) {
 			return true
 		}
 	}
+
+	// Check against subnets (CIDR ranges)
+	for _, subnet := range a.NoAuthSubnets {
+		if subnet.Contains(clientIP) {
+			return true
+		}
+	}
+
 	return false
 }
 

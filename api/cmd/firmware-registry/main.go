@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -128,28 +129,67 @@ func main() {
 		}
 	}
 
-	// Parse comma-separated NoAuthIPs
-	var noAuthIPs []string
+	// Parse comma-separated NoAuthIPs (supports both individual IPs and CIDR subnets)
+	var noAuthIPs []net.IP
+	var noAuthSubnets []*net.IPNet
 	if cfg.NoAuthIPs != "" {
-		for _, ip := range strings.Split(cfg.NoAuthIPs, ",") {
-			ip = strings.TrimSpace(ip)
-			if ip != "" {
+		for _, entry := range strings.Split(cfg.NoAuthIPs, ",") {
+			entry = strings.TrimSpace(entry)
+			if entry == "" {
+				continue
+			}
+
+			// Check if it's a CIDR subnet (contains "/")
+			if strings.Contains(entry, "/") {
+				_, subnet, err := net.ParseCIDR(entry)
+				if err != nil {
+					log.Warn().
+						Str("entry", entry).
+						Err(err).
+						Msg("Invalid CIDR subnet in FW_NOAUTH_IPS, skipping")
+					continue
+				}
+				noAuthSubnets = append(noAuthSubnets, subnet)
+			} else {
+				// Parse as individual IP
+				ip := net.ParseIP(entry)
+				if ip == nil {
+					log.Warn().
+						Str("entry", entry).
+						Msg("Invalid IP address in FW_NOAUTH_IPS, skipping")
+					continue
+				}
 				noAuthIPs = append(noAuthIPs, ip)
 			}
 		}
-		if len(noAuthIPs) > 0 {
-			log.Info().
-				Strs("ips", noAuthIPs).
-				Msg("No-auth IP whitelist configured")
+
+		if len(noAuthIPs) > 0 || len(noAuthSubnets) > 0 {
+			logEvent := log.Info()
+			if len(noAuthIPs) > 0 {
+				ipStrs := make([]string, len(noAuthIPs))
+				for i, ip := range noAuthIPs {
+					ipStrs[i] = ip.String()
+				}
+				logEvent = logEvent.Strs("ips", ipStrs)
+			}
+			if len(noAuthSubnets) > 0 {
+				subnetStrs := make([]string, len(noAuthSubnets))
+				for i, subnet := range noAuthSubnets {
+					subnetStrs[i] = subnet.String()
+				}
+				logEvent = logEvent.Strs("subnets", subnetStrs)
+			}
+			logEvent.Msg("No-auth IP/subnet whitelist configured")
 		}
 	}
 
 	authHandler := auth.Auth{
-		AdminKey:     cfg.AdminKey,
-		DeviceKey:    cfg.DeviceKey,
-		NoAuthIPs:    noAuthIPs,
-		OIDCEnabled:  cfg.OIDC.Enabled,
-		OIDCVerifier: oidcVerifier,
+		AdminKey:      cfg.AdminKey,
+		DeviceKey:     cfg.DeviceKey,
+		NoAuthIPs:     noAuthIPs,
+		NoAuthSubnets: noAuthSubnets,
+		OIDCEnabled:   cfg.OIDC.Enabled,
+		OIDCVerifier:  oidcVerifier,
 	}
 
 	fwHandler := &handlers.FirmwareHandler{
