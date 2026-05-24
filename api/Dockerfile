@@ -1,7 +1,7 @@
 # ============================
 # 1. Build Stage (CGO enabled)
 # ============================
-FROM --platform=$BUILDPLATFORM golang:1.24.0-bullseye AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.1-bullseye AS builder
 WORKDIR /app
 
 # Enable CGO because go-sqlite3 requires it
