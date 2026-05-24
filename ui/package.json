@@ -9,14 +9,14 @@
     "preview": "vite preview --host 0.0.0.0 --port 5173"
   },
   "dependencies": {
-    "axios": "^1.7.9",
-    "oidc-client-ts": "^3.4.1",
-    "vue": "^3.5.12"
+    "axios": "^1.16.1",
+    "oidc-client-ts": "^3.5.0",
+    "vue": "^3.5.34"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.1.4",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.11",
-    "vue-tsc": "^2.1.10"
+    "@vitejs/plugin-vue": "^6.0.7",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14",
+    "vue-tsc": "^3.3.1"
   }
 }
